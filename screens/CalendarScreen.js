@@ -10,14 +10,14 @@ const CalendarScreen = () => {
   const { currentUser } = useContext(UserContext);
   const { addConversation } = useContext(ConversationContext);
 
-  const [events, setEvents] = useState([]);
+  const [markedDates, setMarkedDates] = useState({});
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [newAvailability, setNewAvailability] = useState(new Date());
   const [showButtons, setShowButtons] = useState(false);
 
   const presenter = new CalendarScreenPresenter(
     {
-      setEvents,
+      setEvents: setMarkedDates,
       showError: (message) => Alert.alert("Error", message),
       showConfirmation: (message, onConfirm) =>
         Alert.alert("Confirm Schedule", message, [
@@ -32,7 +32,7 @@ const CalendarScreen = () => {
 
   useEffect(() => {
     presenter.initialize();
-  }, []);
+  }, []);~
 
   const addAvailability = () => {
     presenter.addAvailability(selectedDate, newAvailability);
@@ -48,12 +48,14 @@ const CalendarScreen = () => {
     </TouchableOpacity>
   );
 
+  const eventsForSelectedDate = presenter.getEventsForDate(selectedDate);
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Select a Date</Text>
       <Calendar
         onDayPress={(day) => setSelectedDate(day.dateString)}
-        markedDates={events}
+        markedDates={markedDates}
         markingType="multi-dot"
         theme={{
           todayTextColor: "#00BEFF",
@@ -62,11 +64,15 @@ const CalendarScreen = () => {
         }}
       />
       <Text style={styles.sectionTitle}>Available Times</Text>
-      <FlatList
-        data={events.filter((event) => event.date === selectedDate)}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderAvailableTime}
-      />
+      {eventsForSelectedDate.length > 0 ? (
+        <FlatList
+          data={eventsForSelectedDate}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderAvailableTime}
+        />
+      ) : (
+        <Text>No available times for this date.</Text>
+      )}
       <Text style={styles.sectionTitle}>Add Availability</Text>
       {showButtons ? (
         <View>

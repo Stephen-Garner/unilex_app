@@ -12,7 +12,7 @@ export class CalendarScreenPresenter {
   async initialize() {
     try {
       const events = await this.service.getEvents();
-      this.events = events;
+      this.events = events || []; // Ensure events is an array
       this.updateView();
     } catch (error) {
       console.error("Error fetching events:", error);
@@ -21,28 +21,38 @@ export class CalendarScreenPresenter {
   }
 
   updateView() {
-    this.view.setEvents(this.events);
+    this.view.setEvents(this.getMarkedDates());
   }
 
-//   getMarkedDates() {
-//     return this.events.reduce((acc, event) => {
-//       const isUserEvent = event.studentId.includes(this.currentUser.studentId);
+  getMarkedDates() {
+    return this.events.reduce((acc, event) => {
+      if (!acc[event.date]) {
+        acc[event.date] = { dots: [] };
+      }
 
-//       if (!acc[event.date]) {
-//         acc[event.date] = { dots: [] };
-//       }
+      // Add a dot for the current user
+      if (
+        event.studentId.includes(this.currentUser.studentId) &&
+        !acc[event.date].dots.some((dot) => dot.color === "#00BEFF")
+      ) {
+        acc[event.date].dots.push({ color: "#00BEFF", key: `user-${event.date}` });
+      }
 
-//       if (isUserEvent && !acc[event.date].dots.some((dot) => dot.color === "#00BEFF")) {
-//         acc[event.date].dots.push({ color: "#00BEFF", key: `user-${event.date}` });
-//       }
+      // Add a dot for other users
+      if (
+        !event.studentId.includes(this.currentUser.studentId) &&
+        !acc[event.date].dots.some((dot) => dot.color === "#ff820c")
+      ) {
+        acc[event.date].dots.push({ color: "#ff820c", key: `other-${event.date}` });
+      }
 
-//       if (!isUserEvent && !acc[event.date].dots.some((dot) => dot.color === "#ff820c")) {
-//         acc[event.date].dots.push({ color: "#ff820c", key: `other-${event.date}` });
-//       }
+      return acc;
+    }, {});
+  }
 
-//       return acc;
-//     }, {});
-//   }
+  getEventsForDate(date) {
+    return this.events.filter((event) => event.date === date);
+  }
 
   addAvailability(selectedDate, newAvailability) {
     const formattedTime = newAvailability.toLocaleTimeString([], {
